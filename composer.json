@@ -1,0 +1,21 @@
+{
+  "name": "przeslijmi/sinstaller",
+  "description": "Simple installer solution",
+  "version": "v0.1.0",
+  "type": "library",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Karol Nowakowski",
+      "email": "przeslijmi@gmail.com"
+    }
+  ],
+  "require": {
+    "php" : "^7.3"
+  },
+  "autoload": {
+    "psr-4": {
+      "Przeslijmi\\Sinstaller\\": "src/"
+    }
+  }
+}
