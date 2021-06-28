@@ -61,6 +61,22 @@ class Installer
         file_put_contents($destination, $contents);
     }
 
+    public function fileIfne(
+        string $vendorApp,
+        string $source,
+        string $destination,
+        ?callable $transform = null
+    ) : void {
+
+        // Lvd.
+        $destination = str_replace('\\', '/', $destination);
+
+        // Continue only if not exists.
+        if (file_exists($destination) === false) {
+            $this->file(...func_get_args());
+        }
+    }
+
     /**
      * Install director.
      *
@@ -159,6 +175,16 @@ class Installer
     {
 
         if (file_exists($uri) === false) {
+            return;
+        }
+
+        file_put_contents($uri, $contents);
+    }
+
+    public function setFileContentsIfne(string $uri, string $contents) : void
+    {
+
+        if (file_exists($uri) === true) {
             return;
         }
 
