@@ -1,7 +1,7 @@
 {
   "name": "przeslijmi/sinstaller",
   "description": "Simple installer solution",
-  "version": "v1.0.0",
+  "version": "v1.0.1",
   "type": "library",
   "license": "MIT",
   "authors": [
@@ -11,7 +11,7 @@
     }
   ],
   "require": {
-    "php" : "^7.3"
+    "php" : "^7"
   },
   "autoload": {
     "psr-4": {
