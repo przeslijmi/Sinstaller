@@ -1,40 +1,145 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 namespace Przeslijmi\Sinstaller;
 
+use Przeslijmi\Sinstaller\Exception;
+use Przeslijmi\Sinstaller\Executors;
+use Przeslijmi\Sinstaller\Logger;
 use stdClass;
+use Throwable;
 
 /**
  * Simple installing class.
+ *
+ * See README.md for more info.
  */
-class Installer
+class Installer extends Executors
 {
+
+    /**
+     * Logger object initialised on creation.
+     *
+     * @var Logger
+     */
+    protected $logger;
 
     /**
      * Contents of composer.
      *
      * @var stdClass
      */
-    private $composer;
+    protected $composer;
 
     /**
-     * Setter for composer contents.
+     * When set to true critical stop will be fired upon error - ending work of programme.
      *
-     * @param string $composerUri Uri of the composer.
+     * @var boolean
      */
-    public function setComposer(string $composerUri) : void
+    protected $criticalStop = true;
+
+    /**
+     * Constructor.
+     *
+     * @param boolean $doEchoLog Optional true. Set to false to disable echo'ing.
+     */
+    public function __construct(bool $doEchoLog = true)
     {
 
-        $this->composer = json_decode(file_get_contents($composerUri));
+        // Instantitate.
+        $this->logger = new Logger($this);
+
+        // Disable echo if needed.
+        if ($doEchoLog === false) {
+            $this->logger->disableEcho();
+        }
+
+        // Say hello.
+        $this->logger->sayHello();
+    }
+
+    /**
+     * Disable shutting code on error.
+     *
+     * @return void
+     */
+    public function disableCriticalStop(): void
+    {
+
+        $this->criticalStop = false;
+    }
+
+    /**
+     * Enable shutting code on error.
+     *
+     * @return void
+     */
+    public function enableCriticalStop(): void
+    {
+
+        $this->criticalStop = true;
+    }
+
+    /**
+     * Checks if critical stop on error is enabled.
+     *
+     * @return boolean
+     */
+    public function isCriticalStopEnabled(): bool
+    {
+
+        return $this->criticalStop;
+    }
+
+    /**
+     * Setter for composer contents - composer is needed to calc source app dirs.
+     *
+     * @param string $composerUri Uri of the composer.
+     *
+     * @throws Exception When job can not be done.
+     * @return void
+     */
+    public function setComposer(string $composerUri): void
+    {
+
+        // Log.
+        $this->logger->log(' => will use composer: ' . $composerUri . ' ... ');
+
+        // Perform.
+        try {
+
+            // Check.
+            if (file_exists($composerUri) === false || is_file($composerUri) === false) {
+                throw new Exception('composer file not found or uri leads not to a file');
+            }
+
+            // Parse.
+            $this->composer = json_decode(file_get_contents($composerUri));
+
+            // Check.
+            if (empty($this->composer) === true) {
+                throw new Exception('file corrupted');
+            }
+
+            // End.
+            $this->logger->logSuccess();
+        } catch (Throwable $thr) {
+
+            // End.
+            $this->logger->logFailure($thr);
+        }//end try
     }
 
     /**
      * Install file.
      *
-     * @param string $vendorApp   From which app.
-     * @param string $source      Which file.
-     * @param string $destination Where to put.
+     * @param string   $vendorApp   From which app.
+     * @param string   $source      Which file.
+     * @param string   $destination Where to put.
+     * @param callable $transform   Php function to run on every installed file.
      *
+     * @throws Exception When job can not be done.
      * @return void
      */
     public function file(
@@ -42,184 +147,323 @@ class Installer
         string $source,
         string $destination,
         ?callable $transform = null
-    ) : void {
+    ): void {
 
-        // Lvd.
-        $source      = str_replace('\\', '/', $source);
-        $destination = str_replace('\\', '/', $destination);
+        // Log.
+        $this->logger->log(' => will install file: ' . $source . ' from app ' . $vendorApp . ' ... ');
 
-        // Recalc source.
-        $source = $this->getVendorAppUri($vendorApp) . $source;
+        // Perform.
+        try {
 
-        // Get contents.
-        $contents = file_get_contents($source);
+            // Check emptyness.
+            if (empty($source) === true || empty($destination) === true) {
+                throw new Exception('nor source, nor destination may be empty');
+            }
 
-        if ($transform !== null) {
-            $contents = $transform($contents);
-        }
+            // Lvd.
+            $source      = str_replace('\\', '/', $source);
+            $destination = str_replace('\\', '/', $destination);
 
-        file_put_contents($destination, $contents);
+            // Recalc source.
+            $source = $this->getVendorAppUri($vendorApp) . $source;
+
+            // Check.
+            if (file_exists($source) === false) {
+                throw new Exception('source file not found');
+            }
+
+            // Get contents.
+            $contents = file_get_contents($source);
+
+            // Call transformations.
+            if ($transform !== null) {
+                $contents = $transform($contents);
+            }
+
+            // Check dir.
+            if (strpos($destination, '/') !== false && file_exists(dirname($destination)) === false) {
+                throw new Exception('destination dir does not exists');
+            }
+
+            // Save file.
+            file_put_contents($destination, $contents);
+
+            // End.
+            $this->logger->logSuccess();
+
+        } catch (Throwable $thr) {
+
+            // End.
+            $this->logger->logFailure($thr);
+        }//end try
     }
 
+    /**
+     * Install file - only if destination file does not exists.
+     *
+     * @param string   $vendorApp   From which app.
+     * @param string   $source      Which file.
+     * @param string   $destination Where to put.
+     * @param callable $transform   Php function to run on every installed file.
+     *
+     * @return void
+     */
     public function fileIfne(
         string $vendorApp,
         string $source,
         string $destination,
         ?callable $transform = null
-    ) : void {
+    ): void {
 
         // Lvd.
         $destination = str_replace('\\', '/', $destination);
 
         // Continue only if not exists.
         if (file_exists($destination) === false) {
-            $this->file(...func_get_args());
+
+            // Perform.
+            $this->file($vendorApp, $source, $destination, $transform);
+            return;
         }
+
+        // Log to inform why nothing was done.
+        $this->logger->logLn(
+            ' => will NOT install file: ' . $source . ' from app ' . $vendorApp . ' cause file already exists'
+        );
     }
 
     /**
-     * Install director.
+     * Install directory.
      *
      * @param string $vendorApp   From which app.
      * @param string $source      Which directory.
      * @param string $destination Where to put.
      *
+     * @throws Exception When job can not be done.
      * @return void
      */
-    public function dir(string $vendorApp, string $source, string $destination) : void
+    public function dir(string $vendorApp, string $source, string $destination): void
     {
 
-        // Lvd.
-        $source      = rtrim(str_replace('\\', '/', $source), '/') . '/';
-        $destination = rtrim(str_replace('\\', '/', $destination), '/') . '/';
+        // Log.
+        $this->logger->log(' => will install dir: ' . $source . ' from app ' . $vendorApp . ' ... ');
 
-        // Recalc source.
-        $source = $this->getVendorAppUri($vendorApp) . $source;
+        // Perform.
+        try {
 
-        // Empty destionation dir.
-        if (file_exists($destination) === false) {
-            $this->makeDir($destination);
-        } else {
-            $this->emptyDir($destination);
-        }
-
-        // Copy to destination fir.
-        foreach ($this->getElementsRecursively($source) as $elSource) {
-
-            // Calc real destination uri for this element.
-            $elDestination = $destination . substr($elSource, ( strrpos($elSource, $source) + strlen($source)));
-
-            // Copy file.
-            if (is_file($elSource) === true) {
-                copy($elSource, $elDestination);
-            } else {
-                mkdir($elDestination);
+            // Check emptyness.
+            if (empty($source) === true || empty($destination) === true) {
+                throw new Exception('nor source, nor destination may be empty - use `.` (dot) instead');
             }
-        }
-    }
 
-    public function echo(string $what) : void
-    {
+            // Define source and destination.
+            $source      = rtrim(str_replace('\\', '/', $source), '/') . '/';
+            $destination = rtrim(str_replace('\\', '/', $destination), '/') . '/';
 
-        if ($what === 'cwd' || $what === 'currDir') {
-            echo getcwd();
-        }
+            // Recalc source.
+            $source = $this->getVendorAppUri($vendorApp) . $source;
+
+            // Check.
+            if (file_exists($source) === false || is_dir($source) === false) {
+                throw new Exception('source dir not found or is not a dir');
+            }
+
+            // Empty destionation dir.
+            if (file_exists($destination) === false) {
+                $this->execMakeDir($destination);
+            } else {
+                $this->execEmptyDirRecursively($destination);
+            }
+
+            // Copy to destination fir.
+            foreach ($this->getElementsRecursively($source) as $elSource) {
+
+                // Calc real destination uri for this element.
+                $elDestination = $destination . substr($elSource, ( strrpos($elSource, $source) + strlen($source) ));
+
+                // Copy file.
+                if (is_file($elSource) === true) {
+                    copy($elSource, $elDestination);
+                } else {
+                    mkdir($elDestination);
+                }
+            }
+
+            // End.
+            $this->logger->logSuccess();
+
+        } catch (Throwable $thr) {
+
+            // End.
+            $this->logger->logFailure($thr);
+        }//end try
     }
 
     /**
-     * Getter for vendor-app uri.
+     * Getter for Logger object.
      *
-     * @param string $vendorApp Vendor-app for which uri has to be delivered.
+     * @return Logger
+     */
+    public function getLogger(): Logger
+    {
+
+        return $this->logger;
+    }
+
+    /**
+     * Getter for log history (contents).
      *
      * @return string
      */
-    private function getVendorAppUri(string $vendorApp) : string
+    public function getLog(): string
     {
 
-        // Make sure vendor-app ends with backslash.
-        $vendorApp = rtrim($vendorApp, '\\') . '\\';
-
-        return $this->composer->autoload->{'psr-4'}->{$vendorApp};
+        return $this->logger->getHistory();
     }
 
     /**
-     * Reades dir recursively and return all found files and directories.
+     * Sets file contents - but only if that file already exists.
      *
-     * @param string $dir Dir in which to search (will go recurisve).
+     * @param string $uri      File uri in which contents has to be set.
+     * @param string $contents Contents of contents to be set :D .
      *
-     * @return array
+     * @throws Exception When job can not be done.
+     * @return void
      */
-    private function getElementsRecursively(string $dir) : array
+    public function setFileContentsIfe(string $uri, string $contents): void
     {
 
-        // Lvd.
-        $dir    = rtrim(str_replace('\\', '/', $dir), '/') . '/';
-        $result = [];
-
-        // Scan all.
-        foreach (glob($dir . '*') as $element) {
-
-            // Add element.
-            $result[] = $element;
-
-            // If this is dir - go deeper.
-            if (is_dir($element) === true) {
-                $result = array_merge($result, $this->getElementsRecursively($element));
-            }
-        }
-
-        return $result;
-    }
-
-    public function setFileContentsIfe(string $uri, string $contents) : void
-    {
-
+        // Log to inform why nothing was done.
         if (file_exists($uri) === false) {
+            $this->logger->logLn(' => will NOT set contents of a file: ' . $uri . ' cause file does not exists');
             return;
         }
 
-        file_put_contents($uri, $contents);
+        // Log.
+        $this->logger->log(' => will set contents of a file: ' . $uri . ' ... ');
+
+        // Perform.
+        try {
+
+            // Continue only if exists.
+            if (is_file($uri) === false) {
+                throw new Exception('it is not a file under given uri');
+            }
+
+            // Perform.
+            file_put_contents($uri, $contents);
+
+            // End.
+            $this->logger->logSuccess();
+
+        } catch (Throwable $thr) {
+
+            // End.
+            $this->logger->logFailure($thr);
+        }
     }
 
-    public function setFileContentsIfne(string $uri, string $contents) : void
+    /**
+     * Sets file contents - but only if that file does not exists.
+     *
+     * @param string $uri      File uri in which contents has to be set.
+     * @param string $contents Contents of contents to be set :D .
+     *
+     * @throws Exception When job can not be done.
+     * @return void
+     */
+    public function setFileContentsIfne(string $uri, string $contents): void
     {
 
-        if (file_exists($uri) === true) {
+        // Log to inform why nothing was done.
+        if (file_exists($uri) === true && is_file($uri) === true) {
+            $this->logger->logLn(' => will NOT set contents of a file: ' . $uri . ' cause file already exists');
             return;
         }
 
-        file_put_contents($uri, $contents);
-    }
+        // Log.
+        $this->logger->log(' => will set contents of a file: ' . $uri . ' ... ');
 
-    public function makeDir(string $dir) : void
-    {
+        // Perform.
+        try {
 
-        $path = '';
-        $dir  = rtrim(str_replace('\\', '/', $dir), '/');
-
-        foreach (explode('/', $dir) as $subDir) {
-
-            $path .= $subDir . '/';
-
-            if (file_exists($path) === false) {
-                mkdir($path);
+            // Continue only if exists.
+            if (file_exists($uri) === true) {
+                throw new Exception('uri is already taken by something other than file');
             }
+
+            // Perform.
+            file_put_contents($uri, $contents);
+
+            // End.
+            $this->logger->logSuccess();
+
+        } catch (Throwable $thr) {
+
+            // End.
+            $this->logger->logFailure($thr);
         }
     }
 
-    public function emptyDir(string $dir) : void
+    /**
+     * Make directory (serves recursiveness).
+     *
+     * @param string $dir Uri to new dir.
+     *
+     * @return void
+     */
+    public function makeDir(string $dir): void
     {
 
-        // Lvd.
-        $dir = rtrim(str_replace('\\', '/', $dir), '/');
+        // Log.
+        $this->logger->log(' => will create empty dir: ' . $dir . ' ... ');
 
-        // Empty.
-        foreach (array_reverse($this->getElementsRecursively($dir)) as $element) {
-            if (is_file($element) === true) {
-                unlink($element);
-            } else {
-                rmdir($element);
-            }
+        // Fast end.
+        if (file_exists($dir) === true && is_dir($dir) === true) {
+            $this->logger->logLn('already exists');
+            return;
+        }
+
+        // Try.
+        try {
+
+            // Perform.
+            $this->execMakeDir($dir);
+
+            // End.
+            $this->logger->logSuccess();
+        } catch (Throwable $thr) {
+
+            // End.
+            $this->logger->logFailure($thr);
+        }
+    }
+
+    /**
+     * Cleans directory (serves recursiveness).
+     *
+     * @param string $dir Uri to dir that is to be deleted..
+     *
+     * @return void
+     */
+    public function emptyDirRecursively(string $dir): void
+    {
+
+        // Log.
+        $this->logger->log(' => will recursively empty a dir: ' . $dir . ' ... ');
+
+        // Try.
+        try {
+
+            // Perform.
+            $this->execEmptyDirRecursively(...func_get_args());
+
+            // End.
+            $this->logger->logSuccess();
+        } catch (Throwable $thr) {
+
+            // End.
+            $this->logger->logFailure($thr);
         }
     }
 }
