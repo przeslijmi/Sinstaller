@@ -33,3 +33,13 @@ jobs:
         configuration: phpunit.xml
         memory_limit: 256M
         bootstrap: bootstrap.php
+
+    - name: Create Awesome Badge
+      uses: schneegans/dynamic-badges-action@v1.1.0
+      with:
+        auth: ${{ secrets.GIST_SECRET }}
+        gistID: ddfc64b8aa29f4d841ab52f394e43482
+        filename: test.json
+        label: Hello
+        message: World
+        color: orange
