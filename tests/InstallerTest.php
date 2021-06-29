@@ -293,7 +293,7 @@ final class InstallerTest extends TestCase
 
         // Lvd.
         $result  = "\n\n";
-        $result .= 'Hello to Sinstaller by @przeslijmi [v1.0.0]' . "\n";
+        $result .= 'Hello to Sinstaller by @przeslijmi [v1.0.3]' . "\n";
         $result .= 'See https://github.com/przeslijmi/Sinstaller for help' . "\n\n\n";
 
         // Include composer.
