@@ -318,7 +318,7 @@ class Installer extends Executors
     public function getLog(): string
     {
 
-        return $this->logger->getHistory();
+        return $this->logger->getLog();
     }
 
     /**

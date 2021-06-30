@@ -30,11 +30,11 @@ class Logger
     private $doEcho = true;
 
     /**
-     * Get history of what has been sent to echo.
+     * Log history,
      *
      * @var string
      */
-    private $history = '';
+    private $log = '';
 
     /**
      * Constructor.
@@ -85,10 +85,10 @@ class Logger
      *
      * @return string
      */
-    public function getHistory(): string
+    public function getLog(): string
     {
 
-        return $this->history;
+        return $this->log;
     }
 
     /**
@@ -125,7 +125,7 @@ class Logger
         $text = $this->replace($text) . "\n";
 
         // Save log.
-        $this->history .= $text;
+        $this->log .= $text;
 
         // Echo log.
         if ($this->doEcho === true) {
@@ -149,7 +149,7 @@ class Logger
         $text = $this->replace($text);
 
         // Save log.
-        $this->history .= $text;
+        $this->log .= $text;
 
         // Echo log.
         if ($this->doEcho === true) {

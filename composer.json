@@ -1,7 +1,7 @@
 {
   "name": "przeslijmi/sinstaller",
   "description": "Simple installer solution",
-  "version": "v1.0.3",
+  "version": "v1.0.4",
   "type": "library",
   "license": "MIT",
   "authors": [
