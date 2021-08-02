@@ -40,6 +40,13 @@ class Installer extends Executors
     protected $criticalStop = true;
 
     /**
+     * Array of user inputs.
+     *
+     * @var array[]
+     */
+    protected $userInputs = [];
+
+    /**
      * Constructor.
      *
      * @param boolean $doEchoLog Optional true. Set to false to disable echo'ing.
@@ -132,6 +139,64 @@ class Installer extends Executors
     }
 
     /**
+     * Asks user to give some information. If validator is given asks in loop until proper value shows up.
+     *
+     * @param string        $key       Key of data - to be used in `->getUserInput()` method.
+     * @param string        $for       Full contents of prompt ('Give user name:').
+     * @param callable|null $validator Optional. Function that validates given input.
+     * @param string|null   $onFailure Optional. Extra text that will show up on inproper value given.
+     *
+     * @return string
+     */
+    public function askFor(
+        string $key,
+        string $for,
+        ?callable $validator = null,
+        ?string $onFailure = null
+    ): string {
+
+        // Call question.
+        $this->logger->logLn('');
+        $line = readline($for);
+
+        // Serve response.
+        readline_add_history($line);
+        $history = readline_list_history();
+        $input   = (string) array_pop($history);
+
+        // Validate - if validation is needed - and ask again if needed.
+        if ($validator !== null && $validator($input) === false) {
+
+            // Show comment if comment was defined.
+            if (empty($onFailure) === false) {
+                $this->logger->log($onFailure);
+            }
+
+            // Ask again.
+            $input = $this->askFor(...func_get_args());
+        }
+
+        // Save response.
+        $this->userInputs[$key] = $input;
+
+        // Return response.
+        return $this->userInputs[$key];
+    }
+
+    /**
+     * Get user input created by `->askFor()` method.
+     *
+     * @param string $key Key of data used as a first param when asking for data.
+     *
+     * @return null|string
+     */
+    public function getUserInput(string $key): ?string
+    {
+
+        return ( $this->userInputs[$key] ?? null );
+    }
+
+    /**
      * Install file.
      *
      * @param string   $vendorApp   From which app.
@@ -177,7 +242,7 @@ class Installer extends Executors
 
             // Call transformations.
             if ($transform !== null) {
-                $contents = $transform($contents);
+                $contents = $transform($contents, $this);
             }
 
             // Check dir.

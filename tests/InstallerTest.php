@@ -19,6 +19,11 @@ final class InstallerTest extends TestCase
     /**
      * Tests composer usage.
      *
+     * In order to test properly - you have to answer the questions in order:
+     * - `5`
+     * - `10`
+     * - `15`
+     *
      * @return void
      */
     public function testProperFullJob(): void
@@ -33,9 +38,30 @@ final class InstallerTest extends TestCase
         // Start capturing real output.
         ob_start();
 
-        // Perform test.
+        // Define installer.
         $ins = new Installer();
         $ins->setComposer('resources/forTesting/testComposer.json');
+
+        // Ask simple question.
+        $response = $ins->askFor('test', 'Test question - write `5` and hit Enter: ');
+        $this->assertEquals('5', $response);
+        $this->assertEquals('5', $ins->getUserInput('test'));
+        $this->assertEquals(null, $ins->getUserInput('sthNonexisting'));
+
+        // Ask question with validation.
+        $response = $ins->askFor(
+            'number',
+            'Test question - write `10` and hit Enter: ',
+            function (string $input): bool {
+                return ( (int) $input === 15 );
+            },
+            'Just joking - write `15`!'
+        );
+        $this->assertEquals('15', $response);
+        $this->assertEquals('15', $ins->getUserInput('number'));
+
+        // Make HDD operations.
+        $ins->makeDir('resources/testingProbe/src/');
         $ins->makeDir('resources/testingProbe/src/');
         $ins->fileIfne('Vendor\\App', 'Exception.php', 'resources/testingProbe/Exception.php');
         $ins->fileIfne('Vendor\\App', 'Exception.php', 'resources/testingProbe/Exception.php');
@@ -50,7 +76,9 @@ final class InstallerTest extends TestCase
         // Get values.
         $actual    = ob_get_clean();
         $expected  = $this->getHelloText(true) . 'resources/forTesting/testComposer.json ... succeeded' . "\n";
+        $expected .= "\n\n" . 'Just joking - write `15`!' . "\n";
         $expected .= ' => will create empty dir: resources/testingProbe/src/ ... succeeded' . "\n";
+        $expected .= ' => will create empty dir: resources/testingProbe/src/ ... already exists' . "\n";
         $expected .= ' => will install file: Exception.php from app Vendor\App ... succeeded' . "\n";
         $expected .= ' => will NOT install file: Exception.php from app Vendor\App cause file already exists' . "\n";
         $expected .= ' => will install dir: ../ from app Vendor\App ... succeeded' . "\n";
@@ -293,7 +321,7 @@ final class InstallerTest extends TestCase
 
         // Lvd.
         $result  = "\n\n";
-        $result .= 'Hello to Sinstaller by @przeslijmi [v1.0.4]' . "\n";
+        $result .= 'Hello to Sinstaller by @przeslijmi [v1.1.0]' . "\n";
         $result .= 'See https://github.com/przeslijmi/Sinstaller for help' . "\n\n\n";
 
         // Include composer.

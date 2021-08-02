@@ -34,6 +34,22 @@ try {
     $ins->disableCriticalStop();
     $ins->enableCriticalStop();
 
+    // Ask question - you'll have response given by the user in $response variable.
+    $ins->askFor('test', 'Give something: ');
+    $response = $ins->getUserInput('test'));
+
+    // Ask question that will be reasked until validation returns `true`.
+    $ins->askFor(
+        'test',
+        'Write `YES`: ',
+        function (string $response): bool
+        {
+            return ( $response === 'YES' );
+        },
+        'I said - write `YES`!'
+    );
+    $response = $ins->getUserInput('test'));
+
     // Echoing - enabled by default.
     $ins->getLogger()->disableEcho();
     $ins->getLogger()->enableEcho();
@@ -80,6 +96,7 @@ while this operation have source defined not as uri but as app vendor and name `
 
 | Name | Composer.json needed? | Description |
 | --- | --- | --- |
+| `ask` | no | Asks question and can also validate answer. |
 | `file` | **yes** | Copies file from source app into destination. |
 | `fileIfne` | **yes** | Copies file from source app into destination **only if that file does not exists**. |
 | `setFileContentsIfe` | no | Sets given file given contetns **only if that file exists**. |
@@ -87,6 +104,7 @@ while this operation have source defined not as uri but as app vendor and name `
 | `dir` | **yes** | Copies dir from source app into destination. |
 | `makeDir` | no | Creates empty dir - inlcuding path if it is deep. |
 | `emptyDirRecursively` | no | Cleans contents of a dir including all subdirs and all files. |
+| `getUserInput` | no | Deliver user input under given key. |
 | `getLogger` | no | Delivers `Logger` object. |
 | `getLog` | no | Delivers string contents of log. |
 
