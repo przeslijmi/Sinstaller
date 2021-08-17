@@ -531,4 +531,34 @@ class Installer extends Executors
             $this->logger->logFailure($thr);
         }
     }
+
+    /**
+     * Getter for vendor-app uri.
+     *
+     * @param string $vendorApp Vendor-app for which uri has to be delivered.
+     *
+     * @throws Exception When job can not be done.
+     * @return string
+     */
+    public function getVendorAppUri(string $vendorApp): string
+    {
+
+        // Throw.
+        if (empty($this->composer) === true) {
+            throw new Exception('composer not defined, use `->setComposer(...)`');
+        }
+
+        // Make sure vendor-app ends with backslash.
+        $vendorApp = rtrim($vendorApp, '\\') . '\\';
+
+        // Find.
+        $result = ( $this->composer->autoload->{'psr-4'}->{$vendorApp} ?? '' );
+
+        // Throw.
+        if (empty($result) === true) {
+            throw new Exception('app not found in composer');
+        }
+
+        return $result;
+    }
 }

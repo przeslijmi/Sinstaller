@@ -6,7 +6,7 @@
 
 App used to perform file and dir movements after `composer` finishes job.
 
-Mainly used for Agile Data software.
+Used for Agile Data software.
 
 ## Table of contents
 
@@ -104,6 +104,7 @@ while this operation have source defined not as uri but as app vendor and name `
 | `dir` | **yes** | Copies dir from source app into destination. |
 | `makeDir` | no | Creates empty dir - inlcuding path if it is deep. |
 | `emptyDirRecursively` | no | Cleans contents of a dir including all subdirs and all files. |
+| `getVendorAppUri` | yes | Delivers URI to `src` directory of given vendor/app. |
 | `getUserInput` | no | Deliver user input under given key. |
 | `getLogger` | no | Delivers `Logger` object. |
 | `getLog` | no | Delivers string contents of log. |
