@@ -155,14 +155,9 @@ class Installer extends Executors
         ?string $onFailure = null
     ): string {
 
-        // Call question.
+        // Call question and serve response.
         $this->logger->logLn('');
-        $line = readline($for);
-
-        // Serve response.
-        readline_add_history($line);
-        $history = readline_list_history();
-        $input   = (string) array_pop($history);
+        $input = (string) readline($for);
 
         // Validate - if validation is needed - and ask again if needed.
         if ($validator !== null && $validator($input) === false) {
