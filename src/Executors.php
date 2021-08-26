@@ -58,10 +58,12 @@ abstract class Executors
     {
 
         // Lvd.
-        $dir = rtrim(str_replace('\\', '/', $dir), '/');
+        $dir       = rtrim(str_replace('\\', '/', $dir), '/');
+        $filesDirs = array_reverse($this->getElementsRecursively($dir));
 
         // Empty.
-        foreach (array_reverse($this->getElementsRecursively($dir)) as $element) {
+        foreach ($filesDirs as $element) {
+
             if (is_file($element) === true) {
                 unlink($element);
             } else {
@@ -93,12 +95,18 @@ abstract class Executors
         // Scan all.
         foreach (glob($dir . '*') as $element) {
 
-            // Add element.
-            $result[] = $element;
-
-            // If this is dir - go deeper.
+            // If this is dir - go deeper, otherwise - only add.
             if (is_dir($element) === true) {
+
+                // Add element.
+                $result[] = $element . '/';
+
+                // Go deeper.
                 $result = array_merge($result, $this->getElementsRecursively($element));
+            } else {
+
+                // Add element.
+                $result[] = $element;
             }
         }
 
