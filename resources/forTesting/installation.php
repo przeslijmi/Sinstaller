@@ -28,7 +28,6 @@ try {
     $ins->setFileContentsIfne('tests/probe/src/aaa/Exception.php', 'aa');
     $ins->emptyDirRecursively('tests/probe/src/aaa/');
 
-
     $ins->getLogger()->logLn('[NL][NL]Installation finished![NL]');
     $ins->getLogger()->logLn('[NL]Start console with commands:[NL]----------------------------[NL]cd [currDir][NL]php -S 127.0.0.1:8001[NL]----------------------------');
 

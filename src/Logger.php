@@ -173,7 +173,6 @@ class Logger
         // Show.
         $this->logLn('failed, cause ' . $thr->getMessage() . ' !');
 
-
         // Throw critical.
         if ($this->installer->isCriticalStopEnabled() === true) {
             $this->logLn('[NL]CRITICAL STOP[NL][NL]');
